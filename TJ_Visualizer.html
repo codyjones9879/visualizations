@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Data Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .line {
+            fill: none;
+            stroke-width: 2px;
+        }
+
+        .profit-line {
+            stroke: steelblue;
+        }
+
+        .cumulative-line {
+            stroke: green;
+        }
+
+        .axis text {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <svg width="800" height="400"></svg>
+
+    <script>
+        const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+        const width = 800 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Load JSON data
+        d3.json("trading_data.json").then(data => {
+            console.log("Loaded data:", data); // Debug log
+
+            const parseDate = d3.timeParse("%Y-%m-%d");
+            data.forEach(d => {
+                d["Trade Date"] = parseDate(d["Trade Date"]);
+                d["Profit"] = +d["Profit"];
+                d["Cum. net profit"] = +d["Cum. net profit"];
+            });
+
+            const x = d3.scaleTime()
+                .domain(d3.extent(data, d => d["Trade Date"]))
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([d3.min(data, d => Math.min(d["Profit"], d["Cum. net profit"])),
+                d3.max(data, d => Math.max(d["Profit"], d["Cum. net profit"]))])
+                .range([height, 0]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            const profitLine = d3.line()
+                .x(d => x(d["Trade Date"]))
+                .y(d => y(d["Profit"]));
+
+            const cumulativeLine = d3.line()
+                .x(d => x(d["Trade Date"]))
+                .y(d => y(d["Cum. net profit"]));
+
+            svg.append("path")
+                .datum(data)
+                .attr("class", "line profit-line")
+                .attr("d", profitLine);
+
+            svg.append("path")
+                .datum(data)
+                .attr("class", "line cumulative-line")
+                .attr("d", cumulativeLine);
+        }).catch(error => console.error("Error loading JSON:", error));
+    </script>
+</body>
+</html>
