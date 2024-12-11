@@ -10,15 +10,12 @@
             fill: none;
             stroke-width: 2px;
         }
-
         .profit-line {
             stroke: steelblue;
         }
-
         .cumulative-line {
             stroke: green;
         }
-
         .axis text {
             font-size: 12px;
         }
@@ -48,6 +45,10 @@
                 d["Profit"] = +d["Profit"];
                 d["Cum. net profit"] = +d["Cum. net profit"];
             });
+
+            // Filter invalid data
+            data = data.filter(d => d["Trade Date"] !== null && !isNaN(d["Profit"]) && !isNaN(d["Cum. net profit"]));
+            console.log("Validated data:", data);
 
             const x = d3.scaleTime()
                 .domain(d3.extent(data, d => d["Trade Date"]))
